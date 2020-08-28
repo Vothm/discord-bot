@@ -18,22 +18,25 @@ for (const file of commandFiles) {
 
 console.log(client.commands);
 
-client.on('ready', ()=>{
-    console.log('Bot started');
+client.on('ready', () => {
+	console.log('Bot started');
 });
 
 client.on('message', async message => {
 
-    if(!message.content.startsWith(prefix) || message.author.bot) return;
-    const args = message.content.slice(prefix.length).split(/ +/);
-    const commandName = args.shift().toLowerCase();
-    const command = client.commands.get(commandName);
+
+	if (!message.content.startsWith(prefix) || message.author.bot) return;
+	const args = message.content.slice(prefix.length).split(/ +/);
+	const commandName = args.shift().toLowerCase();
+	const command = client.commands.get(commandName);
+
+
 
 	try {
-		if(commandName == "ban" || commandName == "userinfo") {
-            command.execute(message, client);
+		if (commandName == "ban" || commandName == "userinfo") {
+			command.execute(message, client);
 		} else {
-            console.log(message.client.queue); 
+			console.log(message.client.queue);
 			command.execute(message);
 		}
 	} catch (error) {
