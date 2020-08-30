@@ -2,7 +2,7 @@ module.exports = {
     name: 'leave',
     description: 'leave the voice call with this command',
     execute(message) {
-        if (!message.member.voice.channel) return message.channel.send('Bro the bot isn\'t even connected to a channel');
+        if (!message.member.voice.channel) return message.channel.send('You\'re not connected to a voice channel');
 
         if (!message.guild.me.voice.channel) return message.channel.send('Yo I\'m not even there');
 
