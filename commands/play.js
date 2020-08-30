@@ -153,8 +153,8 @@ module.exports = {
                                     .on("error", error => {
                                         react.delete({ timeout: 500 });
                                         serverQueue.songs.shift();
-                                        this.play(message, serverQueue.songs[0]);
                                         console.error(error);
+                                        this.play(message, serverQueue.songs[0]);
                                     })
 
                                 // Useful only if you know how many reactions you want
@@ -228,7 +228,7 @@ module.exports = {
             }
         } catch (err) {
             serverQueue.songs.shift();
-            console.log('You fucked up ' + err);
+            console.log('You fucked up ' + err + '\nPlaying next song...');
             this.play(message, serverQueue.songs[0]);
         }
     },
