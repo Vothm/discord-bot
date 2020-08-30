@@ -120,7 +120,7 @@ module.exports = {
                     .setColor('#FF0000')
                     .setTitle(`Now playing: ${info.videoDetails.title}`)
                     .setURL(info.videoDetails.video_url)
-                    //.setDescription(info.videoDetails.shortDescription)
+                    .setDescription(this.truncateString(info.videoDetails.shortDescription, 400))
                     .setThumbnail(`https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`)
                     .setFooter(`${info.videoDetails.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`)
                     .setImage(`https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`)
@@ -140,12 +140,16 @@ module.exports = {
                                     .play(ytdl(song.url, { quality: 'highestaudio', filter: 'audioonly', highWaterMark: 1 << 25 }))
                                     .on("finish", () => {
                                         serverQueue.songs.shift();
-                                        //message.channel.delete({ embed: currentMusic });
                                         this.play(message, serverQueue.songs[0]);
                                         react.delete({ timeout: 500 });
                                         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
                                     })
-                                    .on("error", error => console.error(error));
+                                    .on("error", error => {
+                                        react.delete({ timeout: 500 });
+                                        serverQueue.songs.shift();
+                                        this.play(message, serverQueue.songs[0]);
+                                        console.error(error);
+                                    })
 
                                 // Useful only if you know how many reactions you want
                                 // react.awaitReactions(filter, { max: 1 }).then(async collected => {
@@ -220,9 +224,16 @@ module.exports = {
                 message.channel.send('Nothing else in the queue');
             }
         } catch (err) {
-            message.channel.send('You fucked up');
+            serverQueue.songs.shift();
+            console.log('You fucked up ' + err);
+            this.play(message, serverQueue.songs[0]);
         }
-
-
     },
+
+    truncateString(str, num) {
+        if (str.length <= num) {
+            return str
+        }
+        return str.slice(0, num) + '...'
+    }
 };
