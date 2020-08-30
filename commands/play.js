@@ -115,15 +115,21 @@ module.exports = {
             if (serverQueue) {
 
                 let info = await ytdl.getInfo(serverQueue.songs[0].url);
+                let songInfo = {
+                    title: info.videoDetails.title,
+                    url: info.videoDetails.video_url,
+                    id: info.videoDetails.videoId,
+                    shortDescription: this.truncateString(info.videoDetails.shortDescription, 400),
+                }
                 let recievedEmbed = message.embeds[0];
                 let currentMusic = new Discord.MessageEmbed(recievedEmbed)
                     .setColor('#FF0000')
-                    .setTitle(`Now playing: ${info.videoDetails.title}`)
-                    .setURL(info.videoDetails.video_url)
-                    .setDescription(this.truncateString(info.videoDetails.shortDescription, 400))
-                    .setThumbnail(`https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`)
-                    .setFooter(`${info.videoDetails.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`)
-                    .setImage(`https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`)
+                    .setTitle(`Now playing: ${songInfo.title}`)
+                    .setURL(songInfo.url)
+                    .setDescription(songInfo.shortDescription)
+                    .setThumbnail(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
+                    .setFooter(`${info.videoDetails.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
+                    .setImage(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
 
                 const filter = (reaction, user) => {
                     return ['⏭️', '⏯️'].includes(reaction.emoji.name) && user.id !== message.guild.me.id;
@@ -166,9 +172,6 @@ module.exports = {
 
                                 const collector = react.createReactionCollector(filter);
                                 collector.on('collect', async (reaction, user) => {
-
-                                    //let firstUser = reaction.users.filter(user => !user.bot).first();
-
                                     if (reaction.emoji.name === '⏭️') {
                                         let userId = user.id;
                                         if (!message.guild.member(userId).voice.channel) {
