@@ -8,6 +8,7 @@ module.exports = {
             if (!message.member.voice.channel) return message.channel.send('Can\'t really stop it if you\'re not here :/');
             serverQueue.songs = [];
             serverQueue.connection.dispatcher.end();
+            message.guild.me.voice.channel.leave();
         } else {
             return message.channel.send('Nothing is playing right now');
         }
