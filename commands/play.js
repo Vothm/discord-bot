@@ -1,4 +1,4 @@
-const ytdl = require('ytdl-core-discord');
+const ytdl = require('ytdl-core');
 const ytlist = require("youtube-playlist");
 const Discord = require("discord.js");
 
@@ -134,15 +134,20 @@ module.exports = {
             if (serverQueue) {
                 // Prepare an embedded message to show the information of the current song
                 let info = await ytdl.getInfo(serverQueue.songs[0].url);
+                const songInfo = {
+                    title: info.player_response.videoDetails.title,
+                    url: info.player_response.videoDetails.video_url,
+                    shortDescription: info.player_response.videoDetails.shortDescription,
+                    id: info.player_response.videoDetails.videoId,
+                }
                 let recievedEmbed = message.embeds[0];
                 let currentMusic = new Discord.MessageEmbed(recievedEmbed)
                     .setColor('#FF0000')
-                    .setTitle(`Now playing: ${info.player_response.videoDetails.title}`)
-                    .setURL(info.player_response.videoDetails.video_url)
-                    //.setDescription(info.videoDetails.shortDescription)
-                    .setThumbnail(`https://img.youtube.com/vi/${info.player_response.videoDetails.videoId}/maxresdefault.jpg`)
-                    .setFooter(`${info.player_response.videoDetails.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${info.player_response.videoDetails.videoId}/maxresdefault.jpg`)
-                    .setImage(`https://img.youtube.com/vi/${info.player_response.videoDetails.videoId}/maxresdefault.jpg`)
+                    .setTitle(`Now playing: ${info.player_response.videoDetails.video_url}`)
+                    .setURL(songInfo.url)
+                    .setThumbnail(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
+                    .setFooter(`${info.player_response.videoDetails.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
+                    .setImage(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
 
                 // Prepare a filter to listen to reactions to do specific commands
                 const filter = (reaction, user) => {
@@ -163,7 +168,7 @@ module.exports = {
                             // ytdl-core-discord will use opus as the default but will go back to FFMPEG if not supported by the YT link
                             .then(async () => {
                                 const dispatcher = serverQueue.connection
-                                    .play(await ytdl(song.url), { type: 'opus', quality: 'highestaudio', filter: 'audioonly', })
+                                    .play(ytdl(song.url), { quality: 'highestaudio', filter: 'audioonly', })
                                     .on("finish", () => {
                                         serverQueue.songs.shift();
                                         this.play(message, serverQueue.songs[0]);
