@@ -151,11 +151,10 @@ module.exports = {
                                         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
                                     })
                                     .on("error", error => {
-                                        //react.delete({ timeout: 500 });
-                                        //serverQueue.songs.shift();
-                                        console.log(`Dispatcher error ` + error)
-                                        serverQueue.connection.dispatcher.end();
-                                        //this.play(message, serverQueue.songs[0]);
+                                        react.delete({ timeout: 500 });
+                                        serverQueue.songs.shift();
+                                        this.play(message, serverQueue.songs[0]);
+                                        console.log(`Dispatcher error` + error)
                                     })
 
                                 // Useful only if you know how many reactions you want
