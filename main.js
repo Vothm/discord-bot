@@ -28,13 +28,9 @@ client.on('message', async message => {
 	const args = message.content.slice(prefix.length).split(/ +/);
 	const commandName = args.shift().toLowerCase();
 	const command = client.commands.get(commandName);
+
 	try {
-		if (commandName == "ban" || commandName == "userinfo") {
-			command.execute(message, client);
-		} else {
-			//console.log(message.client.queue);
-			command.execute(message);
-		}
+		command.execute(message);
 	} catch (error) {
 		console.error(error);
 		message.reply('Yo that\'s not part of the commands');
