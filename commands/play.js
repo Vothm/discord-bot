@@ -7,14 +7,14 @@ module.exports = {
     description: "Play a song in your channel!",
     async execute(message) {
         try {
-            // Gather requirements from the message
             const queue = message.client.queue;
             const args = message.content.split(" ");
+            let validate = await ytdl.validateURL(args[1]);
+            if (!args[1]) return message.channel.send('??? There\'s no link brother');
+
+
             const serverQueue = message.client.queue.get(message.guild.id);
             const voiceChannel = message.member.voice.channel;
-            let validate = await ytdl.validateURL(args[1]);
-
-            if (!args[1]) return message.channel.send('??? There\'s no link brother');
             console.log(`voiceChannel: ${voiceChannel}`);
             if (!voiceChannel) return message.channel.send("You\'re not even in a channel dude");
             const permissions = voiceChannel.permissionsFor(message.client.user);
@@ -24,7 +24,6 @@ module.exports = {
                 );
             };
 
-            // Validate if the link is a link where it IS a playlist but the link does not include the video of the playlist
             if (!validate) {
                 try {
                     await ytlist(args[1], ['name', 'url']).then(res => {
@@ -35,9 +34,8 @@ module.exports = {
                 }
             };
 
-            // If there is nothing in the playlist, then create a contract that includes properties of the bot
             if (!serverQueue) {
-                const queueContract = {
+                const queueContruct = {
                     textChannel: message.channel,
                     voiceChannel: voiceChannel,
                     connection: null,
@@ -45,8 +43,6 @@ module.exports = {
                     volume: 5,
                     playing: true
                 };
-
-                // Check if it's a playlist, then add each song to the server contract
                 try {
                     await ytlist(args[1], ['name', 'url']).then(res => {
                         return res.data.playlist;
@@ -58,37 +54,31 @@ module.exports = {
                                 url: arr[i].url,
                             };
                             console.log(`${playlist.title} - ${playlist.url}`)
-                            queueContract.songs.push(playlist);
+                            queueContruct.songs.push(playlist);
                         }
-                        queue.set(message.guild.id, queueContract);
+                        queue.set(message.guild.id, queueContruct);
                         message.channel.send(`**Added ${arr.length} tracks**`);
                     })
                 } catch {
-                    // If the link did not contain a playlist, just gather the individual song then add to the server contract
                     let info = await ytdl.getInfo(args[1]);
                     let song = {
                         title: info.videoDetails.title,
                         url: info.videoDetails.video_url,
                     };
                     console.log(`Pushing song: ${song.title}\n${song.url}`);
-                    queue.set(message.guild.id, queueContract);
-                    queueContract.songs.push(song);
+                    queue.set(message.guild.id, queueContruct);
+                    queueContruct.songs.push(song);
                 }
-
-                // After adding songs to the contract create a connection from the bot to the voice channel and play the song
                 try {
                     var connection = await voiceChannel.join();
-                    queueContract.connection = connection;
-                    this.play(message, queueContract.songs[0]);
+                    queueContruct.connection = connection;
+                    this.play(message, queueContruct.songs[0]);
                 } catch (err) {
                     console.log(err);
                     queue.delete(message.guild.id);
                     return message.channel.send(err);
                 }
             } else {
-
-                // This means that serverQueue is already a thing which means the contract has also been created
-                // Check for a playlist, then add to the serverQueue. If not, add the single song
                 try {
                     await ytlist(args[1], ['name', 'url']).then(res => {
                         return res.data.playlist;
@@ -122,8 +112,7 @@ module.exports = {
         const queue = message.client.queue;
         const guild = message.guild;
         const serverQueue = queue.get(message.guild.id);
-
-        // Check if there is a next song, else just clear the queue and connection to the server
+        //message.channel.send(`message.guild.me ${message.guild.me.id}`)
         if (!song) {
             message.channel.send('There are no more songs in the queue');
             queue.delete(guild.id);
@@ -132,7 +121,7 @@ module.exports = {
 
         try {
             if (serverQueue) {
-                // Prepare an embedded message to show the information of the current song
+
                 let info = await ytdl.getInfo(serverQueue.songs[0].url);
                 let recievedEmbed = message.embeds[0];
                 let currentMusic = new Discord.MessageEmbed(recievedEmbed)
@@ -144,13 +133,9 @@ module.exports = {
                     .setFooter(`${info.player_response.videoDetails.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${info.player_response.videoDetails.videoId}/maxresdefault.jpg`)
                     .setImage(`https://img.youtube.com/vi/${info.player_response.videoDetails.videoId}/maxresdefault.jpg`)
 
-                // Prepare a filter to listen to reactions to do specific commands
                 const filter = (reaction, user) => {
-                    // This makes it so anyone in the current voice chat can use the commands in the embed
                     return ['⏭️', '⏯️'].includes(reaction.emoji.name) && user.id !== message.guild.me.id;
                 };
-
-                // Sends the embed, try to resolve a promise to react all the emojis
                 message.channel.send({ embed: currentMusic })
                     .then(async react => {
                         Promise.all([
@@ -158,14 +143,12 @@ module.exports = {
                             react.react('⏯️'),
                         ])
                             .catch(() => console.error('One of the emojis failed to react.'))
-
-                            // After resolving the promise connect to the voice channel and then play music
-                            // ytdl-core-discord will use opus as the default but will go back to FFMPEG if not supported by the YT link
                             .then(async () => {
                                 const dispatcher = serverQueue.connection
                                     .play(await ytdl(song.url), { type: 'opus', quality: 'highestaudio', filter: 'audioonly', })
                                     .on("finish", () => {
                                         serverQueue.songs.shift();
+                                        //message.channel.delete({ embed: currentMusic });
                                         this.play(message, serverQueue.songs[0]);
                                         react.delete({ timeout: 500 });
                                         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
@@ -185,12 +168,10 @@ module.exports = {
                                 //     console.log('Idk what happened ' + collected);
                                 // });
 
-                                // Create an event listener that will always listen for emoji responses 
                                 const collector = react.createReactionCollector(filter);
                                 collector.on('collect', async (reaction, user) => {
                                     if (reaction.emoji.name === '⏭️') {
                                         let userId = user.id;
-                                        // If the member isn't in the voice channel then don't let them control the bot
                                         if (!message.guild.member(userId).voice.channel) {
                                             const userReactions = react.reactions.cache.filter(rec => rec.users.cache.has(userId));
                                             try {
@@ -202,10 +183,8 @@ module.exports = {
                                             }
                                             return message.channel.send(`${user} Bitch you tried`);
                                         }
-                                        // .shift() pops the first item in an array
                                         serverQueue.songs.shift();
                                         react.delete({ timeout: 500 });
-                                        // the play function is recursive so we just call play again and go to the next song
                                         this.play(message, serverQueue.songs[0]);
                                     }
 
@@ -234,9 +213,9 @@ module.exports = {
                 message.channel.send('Nothing else in the queue');
             }
         } catch (err) {
-            serverQueue.songs.shift();
-            this.play(message, serverQueue.songs[0]);
-            console.log('You fucked up ' + err);
+            message.channel.send('You fucked up' + err);
         }
+
+
     },
 };
