@@ -9,6 +9,6 @@ module.exports = {
             return message.channel.send('Can\'t really stop if you\'re not connected :/');
         if (!serverQueue)
             return message.channel.send('There no song to skip tho...');
-        serverQueue.connection.dispatcher.emit('finish');
+        serverQueue.connection.dispatcher.end();
     }
 };

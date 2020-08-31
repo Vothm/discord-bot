@@ -97,7 +97,6 @@ module.exports = {
             const queue = message.client.queue;
             const guild = message.guild;
             const serverQueue = queue.get(message.guild.id);
-
             if (!song) {
                 message.channel.send('There are no more songs in the queue');
                 queue.delete(guild.id);
@@ -127,7 +126,7 @@ module.exports = {
                             .on('error', error => {
                                 serverQueue.songs.shift();
                                 play(message, serverQueue.songs[0]);
-                            });
+                            })
                     } catch {
                         // If a video is unavailable or private it gets caught here and moves on to the next song in the playlist
                         serverQueue.songs.shift();
@@ -137,6 +136,7 @@ module.exports = {
 
             } catch (error) {
                 // If a video is unavailable or private it gets caught here and moves on to the next song in the playlist
+                console.log('You fucked up');
                 serverQueue.songs.shift();
                 play(message, serverQueue.songs[0]);
             }
