@@ -19,6 +19,7 @@ module.exports = {
                             url: res.video_url,
                             shortDescription: truncateString(res.description, 200),
                             id: res.video_id,
+                            author: res.author.name,
                         };
 
                         const currentMusic = new Discord.MessageEmbed(recievedEmbed)
@@ -29,6 +30,7 @@ module.exports = {
                             .setThumbnail(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
                             .setFooter(`${songInfo.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
                             .setImage(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
+                            .setAuthor(songInfo.author)
 
 
                         // message.channel.send({ embed: currentMusic }).then(react => {

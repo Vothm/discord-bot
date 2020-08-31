@@ -38,7 +38,7 @@ module.exports = {
 
                 // Add songs: automatically checks if it's a single or playlist link
                 try {
-                    await addSongs(args[1], queueContract.songs);
+                    await addSongs(args[1], queueContract);
                 } catch {
                     console.log('Failed to add songs to the queueContract');
                 }
@@ -74,7 +74,7 @@ module.exports = {
                             title: res.data.playlist[i].name,
                             url: res.data.playlist[i].url,
                         }
-                        queue.push(song);
+                        queue.songs.push(song);
                     }
                     message.channel.send(`**Added ${res.data.playlist.length} tracks**`)
                 });
@@ -84,7 +84,8 @@ module.exports = {
                         title: res.player_response.videoDetails.title,
                         url: res.video_url,
                     }
-                    queue.push(song);
+                    message.channel.send(`**Added ${song.title} to the queue**`);
+                    queue.songs.push(song);
                 });
             }
         }
@@ -98,6 +99,7 @@ module.exports = {
 
             if (!song) {
                 message.channel.send('There are no more songs in the queue');
+                message.guild.me.voice.channel.leave();
                 queue.delete(guild.id);
                 return;
             }
@@ -111,6 +113,7 @@ module.exports = {
                         url: info.video_url,
                         shortDescription: truncateString(info.description, 200),
                         id: info.video_id,
+                        author: info.author,
                     }
 
                     let card = await now.execute(message);
