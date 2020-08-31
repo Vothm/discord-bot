@@ -5,6 +5,7 @@ const {
 	prefix,
 	token,
 } = require('./config.json');
+const now = require('./commands/now');
 
 const client = new Client();
 client.commands = new Discord.Collection();
@@ -30,11 +31,16 @@ client.on('message', async message => {
 	const commandName = args.shift().toLowerCase();
 	const command = client.commands.get(commandName);
 
-	try {
-		command.execute(message, args);
-	} catch (error) {
-		console.error(error);
-		message.reply('Yo that\'s not part of the commands');
+	if (commandName === 'now') {
+		let card = await now.execute(message);
+		message.channel.send({ embed: card });
+	} else {
+		try {
+			command.execute(message, args);
+		} catch (error) {
+			console.error(error);
+			message.reply('Yo that\'s not part of the commands');
+		}
 	}
 });
 

@@ -107,28 +107,39 @@ module.exports = {
             // Create a dispatcher so that the bot can stream the music (Decide on waterMark to maybe help with lag issues. Don't know yet)
             try {
                 let card = await now.execute(message);
-                let richEmbed = message.channel.send({ embed: card }).then(async rEmbed => {
-                    const dispatcher = serverQueue.connection.play(await ytdl(song.url), { type: 'opus', filter: 'audioonly', })
-                        // highWaterMark: 1 << 25
-                        .on('finish', () => {
-                            // message.channel.filte(embedId).then(async msg => {
-                            //     msg.delete({ timeout: 500 });
-                            // })
-                            rEmbed.delete({ timeout: 100 });
-                            serverQueue.songs.shift();
-                            play(message, serverQueue.songs[0]);
+                let richEmbed = message.channel.send({ embed: card }).then(async (rEmbed) => {
+                    try {
+                        const dispatcher = serverQueue.connection.play(await ytdl(song.url), {
+                            type: 'opus',
+                            filter: 'audioonly',
+                            highWaterMark: 1 << 10,
+                            quality: 'highestaudio',
                         })
-                        .on('error', error => {
-                            console.error(error);
-                        });
+                            // highWaterMark: 1 << 25
+                            .on('finish', () => {
+                                // message.channel.filte(embedId).then(async msg => {
+                                //     msg.delete({ timeout: 500 });
+                                // })
+                                rEmbed.delete();
+                                serverQueue.songs.shift();
+                                play(message, serverQueue.songs[0]);
+                            })
+                            .on('error', error => {
+                                serverQueue.songs.shift();
+                                play(message, serverQueue.songs[0]);
+                            });
+                    } catch {
+                        // If a video is unavailable or private it gets caught here and moves on to the next song in the playlist
+                        serverQueue.songs.shift();
+                        play(message, serverQueue.songs[0]);
+                    }
                 })
 
-            } catch {
+            } catch (error) {
                 // If a video is unavailable or private it gets caught here and moves on to the next song in the playlist
                 serverQueue.songs.shift();
                 play(message, serverQueue.songs[0]);
             }
-
         }
     },
 }
