@@ -31,7 +31,7 @@ client.on('message', async message => {
 	const command = client.commands.get(commandName);
 
 	try {
-		command.execute(message);
+		command.execute(message, args);
 	} catch (error) {
 		console.error(error);
 		message.reply('Yo that\'s not part of the commands');

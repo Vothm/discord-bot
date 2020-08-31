@@ -10,9 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@discordjs/opus": "^0.3.2",
     "discord.js": "^12.3.1",
     "ffmpeg-static": "^4.2.7",
+    "libsodium-wrappers": "^0.7.8",
     "opusscript": "0.0.7",
+    "sodium": "^3.0.2",
     "youtube-playlist": "^1.0.4",
     "ytdl-core": "^3.2.2",
     "ytdl-core-discord": "^1.2.1"
