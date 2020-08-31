@@ -108,14 +108,6 @@ module.exports = {
                 if (serverQueue) {
 
                     let info = await ytdl.getInfo(serverQueue.songs[0].url);
-                    let songInfo = {
-                        title: info.player_response.videoDetails.title,
-                        url: info.video_url,
-                        shortDescription: truncateString(info.description, 200),
-                        id: info.video_id,
-                        author: info.author,
-                    }
-
                     let card = await now.execute(message);
 
                     const filter = (reaction, user) => {
