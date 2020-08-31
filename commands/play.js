@@ -14,9 +14,9 @@ module.exports = {
             const voiceChannel = message.member.voice.channel;
             let validate = ytdl.validateURL(args[1]);
 
+            // Check basic stuff so that the bot doesn't break
             if (!args[1]) return message.channel.send('??? There\'s no link brother');
             if (!validate) return message.channel.send('That\'s not even a proper link bro');
-            console.log(`voiceChannel: ${voiceChannel}`);
             if (!voiceChannel) return message.channel.send("You\'re not even in a channel dude");
             const permissions = voiceChannel.permissionsFor(message.client.user);
             if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
@@ -25,6 +25,7 @@ module.exports = {
                 );
             };
 
+            // If there is no music in the queue, make a contract that containts properties for the connection
             if (!serverQueue) {
                 const queueContract = {
                     textChannel: message.channel,
@@ -35,6 +36,7 @@ module.exports = {
                     playing: true
                 };
 
+                // Add songs: automatically checks if it's a single or playlist link
                 try {
                     await addSongs(args[1], queueContract.songs);
                 } catch {
@@ -42,6 +44,8 @@ module.exports = {
                 }
 
                 queue.set(message.guild.id, queueContract);
+
+                // Connect the bot to voice channel and play music
                 try {
                     const connection = await message.member.voice.channel.join();
                     queueContract.connection = connection;
@@ -53,6 +57,7 @@ module.exports = {
                 }
 
             } else {
+                // Assume that server contract is already made, therefore just add song/playlist to the queue
                 addSongs(args[1], serverQueue);
             }
 
@@ -60,6 +65,7 @@ module.exports = {
             console.error(error);
         }
 
+        // function to add songs to a specific queue
         async function addSongs(url, queue) {
             try {
                 await ytlist(url, ['url', 'name']).then(res => {
@@ -83,6 +89,7 @@ module.exports = {
             }
         }
 
+        // Play using ytdl-core-discord. A bit iffy but it "should" be more efficient
         async function play(message, song) {
             const queue = message.client.queue;
             const guild = message.guild;
@@ -93,9 +100,11 @@ module.exports = {
                 queue.delete(guild.id);
                 return;
             }
+
+            // Create a dispatcher so that the bot can stream the music (Decide on waterMark to maybe help with lag issues. Don't know yet)
             try {
-                const dispatcher = serverQueue.connection.play(await ytdl(song.url), { type: 'opus' })
-                    //, filter: 'audioonly', highWaterMark: 1 << 25 
+                const dispatcher = serverQueue.connection.play(await ytdl(song.url), { type: 'opus', filter: 'audioonly', })
+                    // highWaterMark: 1 << 25
                     .on('finish', () => {
                         serverQueue.songs.shift();
                         play(message, serverQueue.songs[0]);
@@ -104,6 +113,7 @@ module.exports = {
                         console.error(error);
                     });
             } catch {
+                // If a video is unavailable or private it gets caught here and moves on to the next song in the playlist
                 serverQueue.songs.shift();
                 play(message, serverQueue.songs[0]);
             }
