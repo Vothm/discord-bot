@@ -2,6 +2,9 @@ const ytdl = require('ytdl-core-discord');
 const ytlist = require("youtube-playlist");
 const Discord = require("discord.js");
 const now = require('./now');
+const Client = require('../client/Client');
+
+const client = new Client();
 
 module.exports = {
     name: "play",
@@ -65,7 +68,7 @@ module.exports = {
             console.error(error);
         }
 
-        // function to add songs to a specific queue
+        // function to add songs to a specific queue. The playlist can only return 100 songs but I don't think anyone is gonna queue up > 100 anyway. 
         async function addSongs(url, queue) {
             try {
                 await ytlist(url, ['url', 'name']).then(res => {
@@ -103,15 +106,23 @@ module.exports = {
 
             // Create a dispatcher so that the bot can stream the music (Decide on waterMark to maybe help with lag issues. Don't know yet)
             try {
-                const dispatcher = serverQueue.connection.play(await ytdl(song.url), { type: 'opus', filter: 'audioonly', })
-                    // highWaterMark: 1 << 25
-                    .on('finish', () => {
-                        serverQueue.songs.shift();
-                        play(message, serverQueue.songs[0]);
-                    })
-                    .on('error', error => {
-                        console.error(error);
-                    });
+                let card = await now.execute(message);
+                let richEmbed = message.channel.send({ embed: card }).then(async rEmbed => {
+                    const dispatcher = serverQueue.connection.play(await ytdl(song.url), { type: 'opus', filter: 'audioonly', })
+                        // highWaterMark: 1 << 25
+                        .on('finish', () => {
+                            // message.channel.filte(embedId).then(async msg => {
+                            //     msg.delete({ timeout: 500 });
+                            // })
+                            rEmbed.delete({ timeout: 100 });
+                            serverQueue.songs.shift();
+                            play(message, serverQueue.songs[0]);
+                        })
+                        .on('error', error => {
+                            console.error(error);
+                        });
+                })
+
             } catch {
                 // If a video is unavailable or private it gets caught here and moves on to the next song in the playlist
                 serverQueue.songs.shift();
