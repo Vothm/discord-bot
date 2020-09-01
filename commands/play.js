@@ -136,7 +136,7 @@ module.exports = {
 
             } catch (error) {
                 // If a video is unavailable or private it gets caught here and moves on to the next song in the playlist
-                console.log('You fucked up');
+                console.log('You messed up');
                 serverQueue.songs.shift();
                 play(message, serverQueue.songs[0]);
             }
