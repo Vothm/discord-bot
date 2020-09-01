@@ -214,6 +214,13 @@ module.exports = {
                 console.log('You fucked up ' + err + '\nPlaying next song...');
                 play(message, serverQueue.songs[0]);
             }
+
+            function truncateString(str, num) {
+                if (str.length <= num) {
+                    return str
+                }
+                return str.slice(0, num) + '...'
+            }
         }
     },
 };
