@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const ytdl = require('ytdl-core-discord');
+const ytdl = require('ytdl-core');
 
 
 module.exports = {
@@ -13,36 +13,36 @@ module.exports = {
         if (serverQueue) {
             try {
                 return new Promise(async (resolve, reject) => {
-                    await ytdl.getInfo(serverQueue.songs[0].url).then(res => {
-                        const songInfo = {
-                            title: res.player_response.videoDetails.title,
-                            url: res.video_url,
-                            shortDescription: truncateString(res.description, 200),
-                            id: res.video_id,
-                            author: res.author.name,
-                        };
+                    let info = await ytdl.getInfo(serverQueue.songs[0].url)
+                    const songInfo = {
+                        title: info.player_response.videoDetails.title,
+                        url: info.video_url,
+                        shortDescription: truncateString(info.description, 200),
+                        id: info.video_id,
+                        author: info.author.name,
+                    };
 
-                        const currentMusic = new Discord.MessageEmbed(recievedEmbed)
-                            .setColor('#FF0000')
-                            .setTitle(`Now playing: ${songInfo.title}`)
-                            .setURL(songInfo.url)
-                            .setDescription(songInfo.shortDescription)
-                            .setThumbnail(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
-                            .setFooter(`${songInfo.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
-                            .setImage(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
-                            .setAuthor(songInfo.author)
+                    const currentMusic = new Discord.MessageEmbed(recievedEmbed)
+                        .setColor('#FF0000')
+                        .setTitle(`Now playing: ${songInfo.title}`)
+                        .setURL(songInfo.url)
+                        .setDescription(songInfo.shortDescription)
+                        .setThumbnail(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
+                        .setFooter(`${songInfo.title}\n${serverQueue.songs.length - 1} songs left`, `https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
+                        .setImage(`https://img.youtube.com/vi/${songInfo.id}/maxresdefault.jpg`)
+                        .setAuthor(songInfo.author)
 
 
-                        // message.channel.send({ embed: currentMusic }).then(react => {
-                        //     Promise.all([
-                        //         react.react('⏭️'),
-                        //         react.react('⏯️'),
-                        //     ])
-                        // });
-                        //serverQueue.on('')
-                        resolve(currentMusic);
-                    })
+                    // message.channel.send({ embed: currentMusic }).then(react => {
+                    //     Promise.all([
+                    //         react.react('⏭️'),
+                    //         react.react('⏯️'),
+                    //     ])
+                    // });
+                    //serverQueue.on('')
+                    resolve(currentMusic);
                 })
+
             } catch (error) {
                 console.log('Could not get song info ' + error);
             }
