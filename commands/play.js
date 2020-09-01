@@ -36,15 +36,15 @@ module.exports = {
                     playing: true
                 };
 
-
+                queue.set(message.guild.id, queueContract);
+                // Add songs: automatically checks if it's a single or playlist link
                 try {
                     await addSongs(args[1], queueContract);
                 } catch {
                     console.log('Failed to add songs to the queueContract');
                 }
 
-                // Add songs: automatically checks if it's a single or playlist link
-                queue.set(message.guild.id, queueContract);
+
                 // Connect the bot to voice channel and play music
                 try {
                     const connection = await message.member.voice.channel.join();
@@ -107,7 +107,7 @@ module.exports = {
             try {
                 if (serverQueue) {
 
-                    //let info = await ytdl.getInfo(serverQueue.songs[0].url);
+                    let info = await ytdl.getInfo(serverQueue.songs[0].url);
                     let card = await now.execute(message);
 
                     const filter = (reaction, user) => {
@@ -211,15 +211,8 @@ module.exports = {
                 }
             } catch (err) {
                 serverQueue.songs.shift();
-                console.log('You fucked up ' + err + '\nPlaying next song...');
+                console.log('You messed up ' + err + '\nPlaying next song...');
                 play(message, serverQueue.songs[0]);
-            }
-
-            function truncateString(str, num) {
-                if (str.length <= num) {
-                    return str
-                }
-                return str.slice(0, num) + '...'
             }
         }
     },

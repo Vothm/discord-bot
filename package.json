@@ -12,6 +12,7 @@
   "dependencies": {
     "discord.js": "^12.3.1",
     "ffmpeg-static": "^4.2.7",
+    "miniget": "^2.0.1",
     "opusscript": "0.0.7",
     "youtube-playlist": "^1.0.4",
     "ytdl-core": "^3.2.2",
