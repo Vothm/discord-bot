@@ -20,7 +20,7 @@ console.log(client.commands);
 const Bearer = require('@bearer/node-agent')
 
 Bearer.init({
-	secretKey: 'key',
+	secretKey: key,
 	stripSensitiveData: true,
 }).then(() => {
 	console.log('Bearer Initialized!')
