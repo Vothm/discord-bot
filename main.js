@@ -4,20 +4,27 @@ const Client = require('./client/Client');
 const {
 	prefix,
 	token,
+	key
 } = require('./config.json');
 const now = require('./commands/now');
-
 const client = new Client();
 client.commands = new Discord.Collection();
-
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
 	client.commands.set(command.name, command);
 }
 
 console.log(client.commands);
+
+const Bearer = require('@bearer/node-agent')
+
+Bearer.init({
+	secretKey: 'key',
+	stripSensitiveData: true,
+}).then(() => {
+	console.log('Bearer Initialized!')
+})
 
 client.on('ready', () => {
 	console.log('Bot started');
