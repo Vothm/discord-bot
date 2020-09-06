@@ -1,4 +1,4 @@
-const ytdl = require('ytdl-core-discord');
+const ytdl = require('ytdl-core');
 const ytlist = require("youtube-playlist");
 const Discord = require("discord.js");
 const now = require('./now');
@@ -90,7 +90,7 @@ module.exports = {
             }
         }
 
-        async function play(message, song) {
+        async function play(message, connection) {
             const queue = message.client.queue;
             const guild = message.guild;
             const serverQueue = queue.get(message.guild.id);
@@ -121,12 +121,12 @@ module.exports = {
                             ])
                                 .catch(() => console.error('One of the emojis failed to react.'))
                                 .then(async () => {
-                                    const dispatcher = serverQueue.connection.play(await ytdl(song.url), {
+                                    const dispatcher = serverQueue.connection.play(ytdl(song.url, {
                                         type: 'opus',
                                         filter: 'audioonly',
-                                        //highWaterMark: 1 << 10,
+                                        highWaterMark: 1 << 10,
                                         quality: 'highestaudio',
-                                    })
+                                    }))
                                         .on("finish", () => {
                                             serverQueue.songs.shift();
                                             play(message, serverQueue.songs[0]);
