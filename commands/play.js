@@ -97,6 +97,7 @@ module.exports = {
             const queue = message.client.queue;
             const guild = message.guild;
             const serverQueue = queue.get(message.guild.id);
+
             if (!song) {
                 message.channel.send('There are no more songs in the queue');
                 queue.delete(guild.id);
