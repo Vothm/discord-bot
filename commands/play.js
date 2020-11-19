@@ -44,6 +44,7 @@ module.exports = {
 							return res.data.playlist;
 						})
 						.then((arr) => {
+							//message.channel.send(`Found a playlist with ${arr.length} songs`);
 							for (let i = 0; i < arr.length; i++) {
 								var playlist = {
 									title: arr[i].name,
@@ -65,11 +66,12 @@ module.exports = {
 					queue.set(message.guild.id, queueContruct);
 					queueContruct.songs.push(song);
 				}
-
 				try {
-					var connection = voiceChannel.join();
+					// message.channel.send(`Awaiting to join`)
+					var connection = await voiceChannel.join();
 					queueContruct.connection = connection;
 					this.play(message, queueContruct.songs[0]);
+					// message.channel.send(`queueContruct songs ${queueContruct.songs[0].title}\n${queueContruct.songs[0].url}`)
 				} catch (err) {
 					console.log(err);
 					queue.delete(message.guild.id);
@@ -131,13 +133,12 @@ module.exports = {
 					.setImage(`https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`);
 
 				const filter = (reaction, user) => {
-					return [ '⏭️', '⏯️' ].includes(reaction.emoji.name) && user.id === message.author.id;
+					return [ '⏭️', '▶️', '⏸️' ].includes(reaction.emoji.name) && user.id === message.author.id;
 				};
 				message.channel.send({ embed: currentMusic }).then(async (react) => {
-					Promise.all([ react.react('⏭️'), react.react('⏯️') ]).catch(() =>
-						console.error('One of the emojis failed to react.')
-					);
-
+					react.react('⏭️');
+					react.react('⏸️');
+					react.react('▶️');
 					const dispatcher = serverQueue.connection
 						.play(ytdl(song.url, { quality: 'highestaudio', filter: 'audioonly', highWaterMark: 1 << 25 }))
 						.on('finish', () => {
@@ -149,48 +150,22 @@ module.exports = {
 						})
 						.on('error', (error) => console.error(error));
 
-					// Useful only if you know how many reactions you want
-					// react.awaitReactions(filter, { max: 1 }).then(async collected => {
-					//     const reaction = collected.first();
-					//     if (reaction.emoji.name === '⏭️') {
-					//         serverQueue.songs.shift();
-					//         react.reactions.removeAll().catch(error => console.error('Failed to clear reactions: ', error));
-					//         react.delete({ timeout: 500 });
-					//         this.play(message, serverQueue.songs[0]);
-					//     }
-					// }).catch(collected => {
-					//     console.log('Idk what happened ' + collected);
-					// });
-
-					const collector = react.createReactionCollector(filter);
-					collector.on('collect', async (reaction, user) => {
-						let userId = message.author.id;
-
-						if (reaction.emoji.name === '⏭️') {
-							//message.channel.send('Skipping');
-							serverQueue.songs.shift();
-							react.delete({ timeout: 500 });
-							this.play(message, serverQueue.songs[0]);
-						}
-
-						if (reaction.emoji.name === '⏯️') {
-							const userReactions = react.reactions.cache.filter((rec) => rec.users.cache.has(userId));
-							try {
-								for (const rec of userReactions.values()) {
-									await rec.users.remove(userId);
-								}
-							} catch (error) {
-								console.error('Failed to remove');
+					react
+						.awaitReactions(filter, { max: 1 })
+						.then(async (collected) => {
+							const reaction = collected.first();
+							if (reaction.emoji.name === '⏭️') {
+								serverQueue.songs.shift();
+								react.reactions
+									.removeAll()
+									.catch((error) => console.error('Failed to clear reactions: ', error));
+								react.delete({ timeout: 500 });
+								this.play(message, serverQueue.songs[0]);
 							}
-
-							if (dispatcher.paused) {
-								//message.channel.send('Resuming');
-								dispatcher.resume();
-							} else {
-								dispatcher.pause();
-							}
-						}
-					});
+						})
+						.catch((collected) => {
+							console.log('Idk what happened ' + collected);
+						});
 				});
 			} else {
 				message.channel.send('Nothing else in the queue');
