@@ -9,7 +9,7 @@ module.exports = {
 		try {
 			const queue = message.client.queue;
 			const args = message.content.split(' ');
-			let validate = ytdl.validateURL(args[1]);
+			let validate = await ytdl.validateURL(args[1]);
 			if (!args[1]) return message.channel.send("??? There's no link brother");
 			if (!validate) return message.channel.send("That's not even a proper link bro");
 			const serverQueue = message.client.queue.get(message.guild.id);
@@ -71,8 +71,7 @@ module.exports = {
 					console.log(err);
 					queue.delete(message.guild.id);
 					return message.channel.send(err);
-                }
-                
+				}
 			} else {
 				try {
 					await ytlist(args[1], [ 'name', 'url' ])
