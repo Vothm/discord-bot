@@ -10,7 +10,7 @@ module.exports = {
         try {
             const queue = message.client.queue;
             const args = message.content.split(" ");
-            let validate = await ytdl.validateURL(args[1]);
+            let validate = ytdl.validateURL(args[1]);
             if (!args[1]) return message.channel.send('??? There\'s no link brother');
             if (!validate) return message.channel.send('That\'s not even a proper link bro');
             const serverQueue = message.client.queue.get(message.guild.id);
@@ -39,7 +39,7 @@ module.exports = {
                 queue.set(message.guild.id, queueContract);
                 // Add songs: automatically checks if it's a single or playlist link
                 try {
-                    await addSongs(args[1], queueContract);
+                    addSongs(args[1], queueContract);
                 } catch {
                     console.log('Failed to add songs to the queueContract');
                 }
@@ -48,8 +48,8 @@ module.exports = {
                 // Connect the bot to voice channel and play music
                 try {
                     const connection = await message.member.voice.channel.join();
-                    queueContract.connection = connection;
-                    play(message, queueContract.songs[0]);
+                    queueContract.connection = await connection;
+                    await play(message, queueContract.songs[0]);
                 } catch (err) {
                     console.log(err);
                     queue.delete(message.guild.id);
@@ -113,28 +113,34 @@ module.exports = {
                     const filter = (reaction, user) => {
                         return ['⏭️', '⏯️'].includes(reaction.emoji.name) && user.id !== message.guild.me.id;
                     };
-                    message.channel.send({ embed: card })
+                    message.channel.send({
+                            embed: card
+                        })
                         .then(async react => {
                             Promise.all([
-                                react.react('⏭️'),
-                                react.react('⏯️'),
-                            ])
+                                    react.react('⏭️'),
+                                    react.react('⏯️'),
+                                ])
                                 .catch(() => console.error('One of the emojis failed to react.'))
                                 .then(async () => {
                                     const dispatcher = serverQueue.connection.play(await ytdl(song.url), {
-                                        type: 'opus',
-                                        filter: 'audioonly',
-                                        //highWaterMark: 1 << 10,
-                                        quality: 'highestaudio',
-                                    })
+                                            type: 'opus',
+                                            filter: 'audioonly',
+                                            //highWaterMark: 1 << 10,
+                                            quality: 'highestaudio',
+                                        })
                                         .on("finish", () => {
                                             serverQueue.songs.shift();
                                             play(message, serverQueue.songs[0]);
-                                            react.delete({ timeout: 500 });
+                                            react.delete({
+                                                timeout: 500
+                                            });
                                             dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
                                         })
                                         .on("error", error => {
-                                            react.delete({ timeout: 500 });
+                                            react.delete({
+                                                timeout: 500
+                                            });
                                             serverQueue.songs.shift();
                                             play(message, serverQueue.songs[0]);
                                             console.log(`Dispatcher error` + error)
@@ -169,7 +175,9 @@ module.exports = {
                                                 return message.channel.send(`${user} Bitch you tried`);
                                             }
                                             serverQueue.songs.shift();
-                                            react.delete({ timeout: 500 });
+                                            react.delete({
+                                                timeout: 500
+                                            });
                                             play(message, serverQueue.songs[0]);
                                         }
 
