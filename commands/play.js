@@ -23,7 +23,7 @@ module.exports = {
 				return message.channel.send('I need the permissions to join and speak in your voice channel!');
 			}
 			if (!serverQueue) {
-				const queueContruct = {
+				const queueContract = {
 					textChannel: message.channel,
 					voiceChannel: voiceChannel,
 					connection: null,
@@ -44,9 +44,9 @@ module.exports = {
 									url: arr[i].url
 								};
 								console.log(`${playlist.title} - ${playlist.url}`);
-								queueContruct.songs.push(playlist);
+								queueContract.songs.push(playlist);
 							}
-							queue.set(message.guild.id, queueContruct);
+							queue.set(message.guild.id, queueContract);
 							message.channel.send(`**Added ${arr.length} tracks**`);
 						});
 				} catch (error) {
@@ -56,8 +56,8 @@ module.exports = {
 						url: info.videoDetails.video_url
 					};
 					console.log(`Pushing song: ${song.title}\n${song.url}`);
-					queue.set(message.guild.id, queueContruct);
-					queueContruct.songs.push(song);
+					queue.set(message.guild.id, queueContract);
+					queueContract.songs.push(song);
 				}
 
 				// Add songs: automatically checks if it's a single or playlist link
@@ -65,8 +65,8 @@ module.exports = {
 				// Connect the bot to voice channel and play music
 				try {
 					var connection = await voiceChannel.join();
-					queueContruct.connection = connection;
-					this.play(message, queueContruct.songs[0]);
+					queueContract.connection = connection;
+					this.play(message, queueContract.songs[0]);
 				} catch (err) {
 					console.log(err);
 					queue.delete(message.guild.id);
