@@ -57,6 +57,7 @@ module.exports = {
 							message.channel.send(`**Added ${arr.length} tracks**`);
 						});
 				} catch (error) {
+					console.log('Unable to add the playlist');
 					let info = await ytdl.getInfo(args[1]);
 					let song = {
 						title: info.videoDetails.title,
