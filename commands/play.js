@@ -36,7 +36,6 @@ module.exports = {
                     playing: true
                 };
 
-                queue.set(message.guild.id, queueContract);
                 // Add songs: automatically checks if it's a single or playlist link
                 try {
                     addSongs(args[1], queueContract);
@@ -44,6 +43,7 @@ module.exports = {
                     console.log('Failed to add songs to the queueContract');
                 }
 
+                queue.set(message.guild.id, queueContract);
 
                 // Connect the bot to voice channel and play music
                 try {
