@@ -1,5 +1,5 @@
 const ytdl = require('ytdl-core');
-const ytlist = require('youtube-playlist');
+const scrapePlaylist = require('youtube-playlist-scraper');
 const Discord = require('discord.js');
 
 module.exports = {
@@ -7,15 +7,15 @@ module.exports = {
 	description: 'Play a song in your channel!',
 	async execute(message) {
 		try {
+			// Setup the queue and verify the link
 			const queue = message.client.queue;
 			const args = message.content.split(' ');
 			let validate = ytdl.validateURL(args[1]);
-			if (!args[1]) return message.channel.send("??? There's no link brother");
-			if (!validate) return message.channel.send("That's not even a proper link bro");
 			const serverQueue = message.client.queue.get(message.guild.id);
-
 			const voiceChannel = message.member.voice.channel;
 
+			if (!args[1]) return message.channel.send("??? There's no link brother");
+			if (!validate) return message.channel.send("That's not even a proper link bro");
 			console.log(`voiceChannel: ${voiceChannel}`);
 			if (!voiceChannel) return message.channel.send("You're not even in a channel dude");
 			const permissions = voiceChannel.permissionsFor(message.client.user);
@@ -29,8 +29,12 @@ module.exports = {
 				url: songInfo.videoDetails.video_url
 			};
 
+			let videoId;
+			if (song.url.includes('list=')) {
+				videoId = args[1].split('list=')[1];
+			}
 			if (!serverQueue) {
-				const queueContruct = {
+				const queueContract = {
 					textChannel: message.channel,
 					voiceChannel: voiceChannel,
 					connection: null,
@@ -39,36 +43,29 @@ module.exports = {
 					playing: true
 				};
 				try {
-					await ytlist(args[1], [ 'name', 'url' ])
-						.then((res) => {
-							return res.data.playlist;
-						})
-						.then((arr) => {
-							for (let i = 0; i < arr.length; i++) {
-								var playlist = {
-									title: arr[i].name,
-									url: arr[i].url
-								};
-								console.log(`${playlist.title} - ${playlist.url}`);
-								queueContruct.songs.push(playlist);
-							}
-							queue.set(message.guild.id, queueContruct);
-							message.channel.send(`**Added ${arr.length} tracks**`);
-						});
+					// Get the playlist and add to the queue of songs
+					let playlists = await this.getPlayList(videoId);
+					for (let i = 0; i < playlists.length; i++) {
+						var single = {
+							title: playlists[i].name,
+							url: playlists[i].url
+						};
+						console.log(`${single.title} - ${single.url}`);
+						queueContract.songs.push(single);
+					}
+					queue.set(message.guild.id, queueContract);
+					message.channel.send(`**Added ${playlists.length} tracks**`);
 				} catch (error) {
-					let info = await ytdl.getInfo(args[1]);
-					let song = {
-						title: info.videoDetails.title,
-						url: info.videoDetails.video_url
-					};
 					console.log(`Pushing song: ${song.title}\n${song.url}`);
-					queue.set(message.guild.id, queueContruct);
-					queueContruct.songs.push(song);
+					queueContract.songs.push(song);
+					queue.set(message.guild.id, queueContract);
 				}
+
+				// Connect to the channel and start playing music
 				try {
 					var connection = await voiceChannel.join();
-					queueContruct.connection = connection;
-					this.play(message, queueContruct.songs[0]);
+					queueContract.connection = connection;
+					this.play(message, queueContract.songs[0]);
 				} catch (err) {
 					console.log(err);
 					queue.delete(message.guild.id);
@@ -76,20 +73,16 @@ module.exports = {
 				}
 			} else {
 				try {
-					await ytlist(args[1], [ 'name', 'url' ])
-						.then((res) => {
-							return res.data.playlist;
-						})
-						.then((arr) => {
-							for (let i = 0; i < arr.length; i++) {
-								let songFromPlaylist = {
-									title: arr[i].name,
-									url: arr[i].url
-								};
-								serverQueue.songs.push(songFromPlaylist);
-							}
-							message.channel.send(`**Added ${arr.length} items to the queue**`);
-						});
+					let playlists = await this.getPlayList(videoId);
+					for (let i = 0; i < playlists.length; i++) {
+						var solo = {
+							title: playlists[i].name,
+							url: playlists[i].url
+						};
+						console.log(`${solo.title} - ${solo.url}`);
+						serverQueue.songs.push(solo);
+					}
+					message.channel.send(`**Added ${playlists.length} tracks**`);
 				} catch (error) {
 					serverQueue.songs.push(song);
 					message.channel.send(`**Added ${song.title} to the queue**`);
@@ -99,6 +92,11 @@ module.exports = {
 			console.log(error);
 			message.channel.send(error.message);
 		}
+	},
+
+	async getPlayList(id) {
+		const data = await scrapePlaylist(id);
+		return data.playlist;
 	},
 
 	async play(message, song) {
@@ -182,12 +180,7 @@ module.exports = {
 								console.error('Failed to remove');
 							}
 
-							if (dispatcher.paused) {
-								//message.channel.send('Resuming');
-								dispatcher.resume();
-							} else {
-								dispatcher.pause();
-							}
+							dispatcher.paused ? dispatcher.resume() : dispatcher.pause();
 						}
 					});
 				});
@@ -195,7 +188,8 @@ module.exports = {
 				message.channel.send('Nothing else in the queue');
 			}
 		} catch (err) {
-			message.channel.send('You fucked up');
+			console.log(err);
+			message.channel.send(err);
 		}
 	}
 };
