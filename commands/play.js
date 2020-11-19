@@ -65,8 +65,9 @@ module.exports = {
 					queue.set(message.guild.id, queueContruct);
 					queueContruct.songs.push(song);
 				}
+
 				try {
-					var connection = await voiceChannel.join();
+					var connection = voiceChannel.join();
 					queueContruct.connection = connection;
 					this.play(message, queueContruct.songs[0]);
 				} catch (err) {

@@ -1,15 +1,11 @@
-const fs = require('fs')
+const fs = require('fs');
 const Discord = require('discord.js');
 const Client = require('./client/Client');
-const {
-	prefix,
-	token,
-	key
-} = require('./config.json');
+const { prefix, token, key } = require('./config.json');
 const now = require('./commands/now');
 const client = new Client();
 client.commands = new Discord.Collection();
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith('.js'));
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
 	client.commands.set(command.name, command);
@@ -17,22 +13,20 @@ for (const file of commandFiles) {
 
 console.log(client.commands);
 
-const Bearer = require('@bearer/node-agent')
+const Bearer = require('@bearer/node-agent');
 
 Bearer.init({
 	secretKey: key,
-	stripSensitiveData: true,
+	stripSensitiveData: true
 }).then(() => {
-	console.log('Bearer Initialized!')
-})
+	console.log('Bearer Initialized!');
+});
 
 client.on('ready', () => {
 	console.log('Bot started');
 });
 
-client.on('message', async message => {
-
-
+client.on('message', async (message) => {
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
 	const args = message.content.slice(prefix.length).split(/ +/);
 	const commandName = args.shift().toLowerCase();
@@ -45,10 +39,9 @@ client.on('message', async message => {
 			command.execute(message);
 		} catch (error) {
 			console.error(error);
-			message.reply('Yo that\'s not part of the commands');
+			message.reply("Yo that's not part of the commands");
 		}
 	}
 });
-
 
 client.login(token);
