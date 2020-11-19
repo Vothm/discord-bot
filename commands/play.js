@@ -1,7 +1,6 @@
-const ytdl = require('ytdl-core-discord');
+const ytdl = require('ytdl-core');
 const ytlist = require('youtube-playlist');
 const Discord = require('discord.js');
-const now = require('./now');
 
 module.exports = {
 	name: 'play',
@@ -23,9 +22,15 @@ module.exports = {
 			if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
 				return message.channel.send('I need the permissions to join and speak in your voice channel!');
 			}
-			// If there is no music in the queue, make a contract that containts properties for the connection
+
+			const songInfo = await ytdl.getInfo(args[1]);
+			const song = {
+				title: songInfo.videoDetails.title,
+				url: songInfo.videoDetails.video_url
+			};
+
 			if (!serverQueue) {
-				const queueContract = {
+				const queueContruct = {
 					textChannel: message.channel,
 					voiceChannel: voiceChannel,
 					connection: null,
@@ -33,192 +38,164 @@ module.exports = {
 					volume: 5,
 					playing: true
 				};
-
-				// Add songs: automatically checks if it's a single or playlist link
 				try {
-					addSongs(args[1], queueContract);
+					await ytlist(args[1], [ 'name', 'url' ])
+						.then((res) => {
+							return res.data.playlist;
+						})
+						.then((arr) => {
+							for (let i = 0; i < arr.length; i++) {
+								var playlist = {
+									title: arr[i].name,
+									url: arr[i].url
+								};
+								console.log(`${playlist.title} - ${playlist.url}`);
+								queueContruct.songs.push(playlist);
+							}
+							queue.set(message.guild.id, queueContruct);
+							message.channel.send(`**Added ${arr.length} tracks**`);
+						});
 				} catch (error) {
-					console.log('Failed to add songs to the queueContract');
+					let info = await ytdl.getInfo(args[1]);
+					let song = {
+						title: info.videoDetails.title,
+						url: info.videoDetails.video_url
+					};
+					console.log(`Pushing song: ${song.title}\n${song.url}`);
+					queue.set(message.guild.id, queueContruct);
+					queueContruct.songs.push(song);
 				}
-
-				queue.set(message.guild.id, queueContract);
-
-				// Connect the bot to voice channel and play music
 				try {
-					const connection = await message.member.voice.channel.join();
-					queueContract.connection = await connection;
-					await play(message, queueContract.songs[0]);
+					var connection = await voiceChannel.join();
+					queueContruct.connection = connection;
+					this.play(message, queueContruct.songs[0]);
 				} catch (err) {
 					console.log(err);
 					queue.delete(message.guild.id);
 					return message.channel.send(err);
 				}
 			} else {
-				// Assume that server contract is already made, therefore just add song/playlist to the queue
-				addSongs(args[1], serverQueue);
+				try {
+					await ytlist(args[1], [ 'name', 'url' ])
+						.then((res) => {
+							return res.data.playlist;
+						})
+						.then((arr) => {
+							for (let i = 0; i < arr.length; i++) {
+								let songFromPlaylist = {
+									title: arr[i].name,
+									url: arr[i].url
+								};
+								serverQueue.songs.push(songFromPlaylist);
+							}
+							message.channel.send(`**Added ${arr.length} items to the queue**`);
+						});
+				} catch (error) {
+					serverQueue.songs.push(song);
+					message.channel.send(`**Added ${song.title} to the queue**`);
+				}
 			}
 		} catch (error) {
-			console.error(error);
+			console.log(error);
+			message.channel.send(error.message);
+		}
+	},
+
+	async play(message, song) {
+		const queue = message.client.queue;
+		const guild = message.guild;
+		const serverQueue = queue.get(message.guild.id);
+
+		if (!song) {
+			message.channel.send('There are no more songs in the queue');
+			serverQueue.voiceChannel.leave();
+			queue.delete(guild.id);
+			return;
 		}
 
-		// function to add songs to a specific queue. The playlist can only return 100 songs but I don't think anyone is gonna queue up > 100 anyway.
-		async function addSongs(url, queue) {
-			try {
-				await ytlist(url, [ 'url', 'name' ]).then((res) => {
-					for (let i = 0; i < res.data.playlist.length; i++) {
-						const song = {
-							title: res.data.playlist[i].name,
-							url: res.data.playlist[i].url
-						};
-						queue.songs.push(song);
-					}
-					message.channel.send(`**Added ${res.data.playlist.length} tracks**`);
-				});
-			} catch (error) {
-				await ytdl.getInfo(url).then((res) => {
-					const song = {
-						title: res.player_response.videoDetails.title,
-						url: res.video_url
-					};
-					message.channel.send(`**Added ${song.title} to the queue**`);
-					queue.songs.push(song);
-				});
-			}
-		}
+		try {
+			if (serverQueue) {
+				let info = await ytdl.getInfo(serverQueue.songs[0].url);
+				let recievedEmbed = message.embeds[0];
+				let currentMusic = new Discord.MessageEmbed(recievedEmbed)
+					.setColor('#FF0000')
+					.setTitle(`Now playing: ${info.videoDetails.title}`)
+					.setURL(info.videoDetails.video_url)
+					//.setDescription(info.videoDetails.shortDescription)
+					.setThumbnail(`https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`)
+					.setFooter(
+						`${info.videoDetails.title}\n${serverQueue.songs.length - 1} songs left`,
+						`https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`
+					)
+					.setImage(`https://img.youtube.com/vi/${info.videoDetails.videoId}/maxresdefault.jpg`);
 
-		async function play(message, song) {
-			const queue = message.client.queue;
-			const guild = message.guild;
-			const serverQueue = queue.get(message.guild.id);
-			//message.channel.send(`message.guild.me ${message.guild.me.id}`)
+				const filter = (reaction, user) => {
+					return [ '⏭️', '⏯️' ].includes(reaction.emoji.name) && user.id === message.author.id;
+				};
+				message.channel.send({ embed: currentMusic }).then(async (react) => {
+					Promise.all([ react.react('⏭️'), react.react('⏯️') ]).catch(() =>
+						console.error('One of the emojis failed to react.')
+					);
 
-			if (!song) {
-				message.channel.send('There are no more songs in the queue');
-				message.guild.me.voice.channel.leave();
-				queue.delete(guild.id);
-				return;
-			}
-
-			try {
-				if (serverQueue) {
-					let info = await ytdl.getInfo(serverQueue.songs[0].url);
-					let card = await now.execute(message);
-
-					const filter = (reaction, user) => {
-						return [ '⏭️', '⏯️' ].includes(reaction.emoji.name) && user.id !== message.guild.me.id;
-					};
-					message.channel
-						.send({
-							embed: card
+					const dispatcher = serverQueue.connection
+						.play(ytdl(song.url, { quality: 'highestaudio', filter: 'audioonly', highWaterMark: 1 << 25 }))
+						.on('finish', () => {
+							serverQueue.songs.shift();
+							//message.channel.delete({ embed: currentMusic });
+							this.play(message, serverQueue.songs[0]);
+							react.delete({ timeout: 500 });
+							dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 						})
-						.then(async (react) => {
-							Promise.all([ react.react('⏭️'), react.react('⏯️') ])
-								.catch(() => console.error('One of the emojis failed to react.'))
-								.then(async () => {
-									const dispatcher = serverQueue.connection
-										.play(await ytdl(song.url), {
-											type: 'opus',
-											filter: 'audioonly',
-											//highWaterMark: 1 << 10,
-											quality: 'highestaudio'
-										})
-										.on('finish', () => {
-											serverQueue.songs.shift();
-											play(message, serverQueue.songs[0]);
-											react.delete({
-												timeout: 500
-											});
-											dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-										})
-										.on('error', (error) => {
-											react.delete({
-												timeout: 500
-											});
-											serverQueue.songs.shift();
-											play(message, serverQueue.songs[0]);
-											console.log(`Dispatcher error` + error);
-										});
+						.on('error', (error) => console.error(error));
 
-									// Useful only if you know how many reactions you want
-									// react.awaitReactions(filter, { max: 1 }).then(async collected => {
-									//     const reaction = collected.first();
-									//     if (reaction.emoji.name === '⏭️') {
-									//         serverQueue.songs.shift();
-									//         react.reactions.removeAll().catch(error => console.error('Failed to clear reactions: ', error));
-									//         react.delete({ timeout: 500 });
-									//         play(message, serverQueue.songs[0]);
-									//     }
-									// }).catch(collected => {
-									//     console.log('Idk what happened ' + collected);
-									// });
+					// Useful only if you know how many reactions you want
+					// react.awaitReactions(filter, { max: 1 }).then(async collected => {
+					//     const reaction = collected.first();
+					//     if (reaction.emoji.name === '⏭️') {
+					//         serverQueue.songs.shift();
+					//         react.reactions.removeAll().catch(error => console.error('Failed to clear reactions: ', error));
+					//         react.delete({ timeout: 500 });
+					//         this.play(message, serverQueue.songs[0]);
+					//     }
+					// }).catch(collected => {
+					//     console.log('Idk what happened ' + collected);
+					// });
 
-									const collector = react.createReactionCollector(filter);
-									collector.on('collect', async (reaction, user) => {
-										if (reaction.emoji.name === '⏭️') {
-											let userId = user.id;
-											if (!message.guild.member(userId).voice.channel) {
-												const userReactions = react.reactions.cache.filter((rec) =>
-													rec.users.cache.has(userId)
-												);
-												try {
-													for (const rec of userReactions.values()) {
-														await rec.users.remove(userId);
-													}
-												} catch (error) {
-													console.error('Failed to remove');
-												}
-												return message.channel.send(`${user} Bitch you tried`);
-											}
-											serverQueue.songs.shift();
-											react.delete({
-												timeout: 500
-											});
-											play(message, serverQueue.songs[0]);
-										}
+					const collector = react.createReactionCollector(filter);
+					collector.on('collect', async (reaction, user) => {
+						let userId = message.author.id;
 
-										if (reaction.emoji.name === '⏯️') {
-											let userId = user.id;
-											const userReactions = react.reactions.cache.filter((rec) =>
-												rec.users.cache.has(userId)
-											);
-											//message.channel.send(`userID ${userId}\nuser ${user}\nMessageMember${message.member}\nid ${message.guild.member(user.id).voice.channel.id}`)
-											if (!message.guild.member(userId).voice.channel) {
-												try {
-													for (const rec of userReactions.values()) {
-														await rec.users.remove(userId);
-													}
-												} catch (error) {
-													console.error('Failed to remove');
-												}
-												return message.channel.send(`${user} Bitch you tried`);
-											}
+						if (reaction.emoji.name === '⏭️') {
+							//message.channel.send('Skipping');
+							serverQueue.songs.shift();
+							react.delete({ timeout: 500 });
+							this.play(message, serverQueue.songs[0]);
+						}
 
-											try {
-												for (const rec of userReactions.values()) {
-													await rec.users.remove(userId);
-												}
-											} catch (error) {
-												console.error('Failed to remove');
-											}
+						if (reaction.emoji.name === '⏯️') {
+							const userReactions = react.reactions.cache.filter((rec) => rec.users.cache.has(userId));
+							try {
+								for (const rec of userReactions.values()) {
+									await rec.users.remove(userId);
+								}
+							} catch (error) {
+								console.error('Failed to remove');
+							}
 
-											if (dispatcher.paused) {
-												//message.channel.send('Resuming');
-												dispatcher.resume();
-											} else {
-												dispatcher.pause();
-											}
-										}
-									});
-								});
-						});
-				} else {
-					message.channel.send('Nothing else in the queue');
-				}
-			} catch (err) {
-				serverQueue.songs.shift();
-				console.log('You messed up ' + err + '\nPlaying next song...');
-				play(message, serverQueue.songs[0]);
+							if (dispatcher.paused) {
+								//message.channel.send('Resuming');
+								dispatcher.resume();
+							} else {
+								dispatcher.pause();
+							}
+						}
+					});
+				});
+			} else {
+				message.channel.send('Nothing else in the queue');
 			}
+		} catch (err) {
+			message.channel.send('You fucked up');
 		}
 	}
 };

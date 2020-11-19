@@ -11,8 +11,7 @@ module.exports = {
         if (!voiceChannel) return message.channel.send("You\'re not even in a channel dude");
 
         if (serverQueue.songs.length > 0) {
-            serverQueue.songs = [];
-            serverQueue.connection.dispatcher.end();
+            return serverQueue.songs.length = 0;
         } else {
             message.channel.send('There are no songs to clear');
         }
