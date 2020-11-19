@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@bearer/node-agent": "^3.2.3",
-    "discord.js": "^12.3.1",
+    "discord.js": "^12.4.1",
     "ffmpeg-static": "^4.2.7",
     "miniget": "^2.0.1",
     "opusscript": "0.0.7",
