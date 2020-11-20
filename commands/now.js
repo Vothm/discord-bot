@@ -4,9 +4,9 @@ const ytdl = require('ytdl-core');
 module.exports = {
 	name: 'now',
 	description: 'Check playing of audio',
-	execute(message) {
+	async execute(message) {
 		const recievedEmbed = message.embeds[0];
-		var currentMusic = new Discord.MessageEmbed().setColor('#FF0000').setTitle('Now playing:');
+		let currentMusic = new Discord.MessageEmbed().setColor('#FF0000').setTitle('Now playing:');
 		message.channel.send(currentMusic).then((react) => {
 			react.react('⏭️');
 		});
@@ -23,7 +23,7 @@ module.exports = {
 						author: info.author.name
 					};
 
-					const currentMusic = new Discord.MessageEmbed(recievedEmbed)
+					currentMusic = new Discord.MessageEmbed(recievedEmbed)
 						.setColor('#FF0000')
 						.setTitle(`Now playing: ${songInfo.title}`)
 						.setURL(songInfo.url)

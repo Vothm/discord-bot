@@ -1,10 +1,7 @@
 const fs = require('fs');
 const Discord = require('discord.js');
 const Client = require('./client/Client');
-const {
-	prefix,
-	token,
-} = require('./config.json');
+const { prefix, token } = require('./config.json');
 
 const client = new Client();
 client.commands = new Discord.Collection();
@@ -23,6 +20,9 @@ client.on('ready', () => {
 });
 
 client.on('message', async (message) => {
+	if (message.content.toLowerCase().includes('hi')) {
+		message.reply('Fuck you');
+	}
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
 	const args = message.content.slice(prefix.length).split(/ +/);
 	const commandName = args.shift().toLowerCase();
@@ -32,7 +32,7 @@ client.on('message', async (message) => {
 		command.execute(message);
 	} catch (error) {
 		console.error(error);
-		message.reply('Yo that\'s not part of the commands');
+		message.reply("Yo that's not part of the commands");
 	}
 });
 

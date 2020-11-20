@@ -30,8 +30,10 @@ module.exports = {
 			};
 
 			let videoId;
-			if (song.url.includes('list=')) {
+			if (message.content.includes('list=')) {
 				videoId = args[1].split('list=')[1];
+			} else {
+				videoId = args[1].split('v=');
 			}
 			if (!serverQueue) {
 				const queueContract = {
@@ -46,7 +48,7 @@ module.exports = {
 					// Get the playlist and add to the queue of songs
 					let playlists = await this.getPlayList(videoId);
 					for (let i = 0; i < playlists.length; i++) {
-						var single = {
+						let single = {
 							title: playlists[i].name,
 							url: playlists[i].url
 						};
@@ -63,7 +65,7 @@ module.exports = {
 
 				// Connect to the channel and start playing music
 				try {
-					var connection = await voiceChannel.join();
+					let connection = await voiceChannel.join();
 					queueContract.connection = connection;
 					this.play(message, queueContract.songs[0]);
 				} catch (err) {
@@ -75,7 +77,7 @@ module.exports = {
 				try {
 					let playlists = await this.getPlayList(videoId);
 					for (let i = 0; i < playlists.length; i++) {
-						var solo = {
+						let solo = {
 							title: playlists[i].name,
 							url: playlists[i].url
 						};
@@ -165,8 +167,16 @@ module.exports = {
 
 						if (reaction.emoji.name === '⏭️') {
 							//message.channel.send('Skipping');
-							serverQueue.songs.shift();
-							react.delete({ timeout: 500 });
+							const userReactions = react.reactions.cache.filter((rec) => rec.users.cache.has(userId));
+							try {
+								serverQueue.songs.shift();
+								for (const rec of userReactions.values()) {
+									await rec.users.remove(userId);
+								}
+							} catch (error) {
+								console.error('Failed to skip');
+							}
+
 							this.play(message, serverQueue.songs[0]);
 						}
 
@@ -182,6 +192,9 @@ module.exports = {
 
 							dispatcher.paused ? dispatcher.resume() : dispatcher.pause();
 						}
+					});
+					collector.on('error', async (err) => {
+						console.log(error);
 					});
 				});
 			} else {
