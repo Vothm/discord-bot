@@ -14,8 +14,17 @@ module.exports = {
 			const serverQueue = message.client.queue.get(message.guild.id);
 			const voiceChannel = message.member.voice.channel;
 
-			if (!args[1]) return message.channel.send("??? There's no link brother");
-			if (!validate) return message.channel.send("That's not even a proper link bro");
+			let videoId;
+			if (!args[1]) return message.channel.send("There's no link brother");
+			if (!validate) {
+				if (args[1].includes('list=')) {
+					videoId = args[1].split('list=')[1];
+				} else {
+					videoId = args[1].split('v=');
+				}
+			} else {
+				return message.channel.send("That's not even a proper link bro");
+			}
 			console.log(`voiceChannel: ${voiceChannel}`);
 			if (!voiceChannel) return message.channel.send("You're not even in a channel dude");
 			const permissions = voiceChannel.permissionsFor(message.client.user);
@@ -23,18 +32,12 @@ module.exports = {
 				return message.channel.send('I need the permissions to join and speak in your voice channel!');
 			}
 
-			const songInfo = await ytdl.getInfo(args[1]);
-			const song = {
+			let songInfo = await ytdl.getInfo(args[1]);
+			let song = {
 				title: songInfo.videoDetails.title,
 				url: songInfo.videoDetails.video_url
 			};
 
-			let videoId;
-			if (message.content.includes('list=')) {
-				videoId = args[1].split('list=')[1];
-			} else {
-				videoId = args[1].split('v=');
-			}
 			if (!serverQueue) {
 				const queueContract = {
 					textChannel: message.channel,
@@ -107,7 +110,7 @@ module.exports = {
 		const serverQueue = queue.get(message.guild.id);
 
 		if (!song) {
-			message.channel.send('There are no more songs in the queue');
+			message.channel.send('Could not find a song');
 			serverQueue.voiceChannel.leave();
 			queue.delete(guild.id);
 			return;
@@ -141,10 +144,17 @@ module.exports = {
 						.play(ytdl(song.url, { quality: 'highestaudio', filter: 'audioonly', highWaterMark: 1 << 25 }))
 						.on('finish', () => {
 							serverQueue.songs.shift();
-							//message.channel.delete({ embed: currentMusic });
-							this.play(message, serverQueue.songs[0]);
-							react.delete({ timeout: 500 });
-							dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+							if (!Array.isArray(serverQueue.songs) || !serverQueue.songs.length) {
+								console.log('List is no more');
+								message.channel.send('There are no more songs in the queue');
+								serverQueue.voiceChannel.leave();
+								queue.delete(guild.id);
+								return;
+							} else {
+								react.delete({ timeout: 500 });
+								dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+								this.play(message, serverQueue.songs[0]);
+							}
 						})
 						.on('error', (error) => console.error(error));
 
@@ -160,9 +170,8 @@ module.exports = {
 					// }).catch(collected => {
 					//     console.log('Idk what happened ' + collected);
 					// });
-
 					const collector = react.createReactionCollector(filter);
-					collector.on('collect', async (reaction, user) => {
+					collector.on('collect', async (reaction) => {
 						let userId = message.author.id;
 
 						if (reaction.emoji.name === '⏭️') {
@@ -176,7 +185,6 @@ module.exports = {
 							} catch (error) {
 								console.error('Failed to skip');
 							}
-
 							this.play(message, serverQueue.songs[0]);
 						}
 
@@ -189,7 +197,6 @@ module.exports = {
 							} catch (error) {
 								console.error('Failed to remove');
 							}
-
 							dispatcher.paused ? dispatcher.resume() : dispatcher.pause();
 						}
 					});
@@ -197,6 +204,7 @@ module.exports = {
 						console.log(error);
 					});
 				});
+				// .then(async (react) => {});
 			} else {
 				message.channel.send('Nothing else in the queue');
 			}
