@@ -36,4 +36,17 @@ client.on('message', async (message) => {
 	}
 });
 
+client.on('voiceStateUpdate', (oldState, newState) => {
+	const queue = oldState.client.queue;
+	// if (!queue) {
+	// 	return;
+	// }
+	// check if someone connects or disconnects
+	if (oldState.channelID === null || typeof oldState.channelID == 'undefined') return;
+	// check if the bot is disconnecting
+	if (newState.id !== client.user.id) return;
+	// clear the queue
+	return queue.delete(oldState.guild.id);
+});
+
 client.login(token);

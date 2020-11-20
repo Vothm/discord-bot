@@ -11,7 +11,7 @@ module.exports = {
 			const queue = message.client.queue;
 			const args = message.content.split(' ');
 			//let validate = ytdl.validateURL(args[1]);
-			const serverQueue = message.client.queue.get(message.guild.id);
+			const serverQueue = queue.get(message.guild.id);
 			const voiceChannel = message.member.voice.channel;
 
 			let videoId;
