@@ -16,7 +16,7 @@ module.exports = {
 
 			let videoId;
 			if (!args[1]) return message.channel.send("There's no link brother");
-			if (!validate) {
+			if (validate) {
 				if (args[1].includes('list=')) {
 					videoId = args[1].split('list=')[1];
 				} else {
@@ -178,14 +178,16 @@ module.exports = {
 							//message.channel.send('Skipping');
 							const userReactions = react.reactions.cache.filter((rec) => rec.users.cache.has(userId));
 							try {
-								serverQueue.songs.shift();
+								// serverQueue.songs.shift();
 								for (const rec of userReactions.values()) {
 									await rec.users.remove(userId);
 								}
+								// Emits the finished event for the dispatcher
+								return dispatcher.emit('finish');
 							} catch (error) {
 								console.error('Failed to skip');
 							}
-							this.play(message, serverQueue.songs[0]);
+							// this.play(message, serverQueue.songs[0]);
 						}
 
 						if (reaction.emoji.name === '⏯️') {
