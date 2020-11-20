@@ -10,20 +10,25 @@ module.exports = {
 			// Setup the queue and verify the link
 			const queue = message.client.queue;
 			const args = message.content.split(' ');
-			let validate = ytdl.validateURL(args[1]);
+			//let validate = ytdl.validateURL(args[1]);
 			const serverQueue = message.client.queue.get(message.guild.id);
 			const voiceChannel = message.member.voice.channel;
 
 			let videoId;
 			if (!args[1]) return message.channel.send("There's no link brother");
-			if (validate) {
-				if (args[1].includes('list=')) {
-					videoId = args[1].split('list=')[1];
-				} else {
-					videoId = args[1].split('v=')[1];
-				}
+			if (args[1].includes('radio')) {
+				return message.channel.send("Sry, can't play YouTube mixes");
+			}
+			if (args[1].includes('playlist')) {
+				console.log('Found playlist main page');
+				videoId = args[1].split('list=')[1];
+			} else if (args[1].includes('list=')) {
+				console.log("Found a playlist that's playing");
+				videoId = args[1].split('list=')[1];
+			} else if (args[1].includes('v=')) {
+				videoId = args[1].split('v=')[1];
 			} else {
-				return message.channel.send("That's not even a proper link bro");
+				message.channel.send('Not a link');
 			}
 			console.log(`voiceChannel: ${voiceChannel}`);
 			if (!voiceChannel) return message.channel.send("You're not even in a channel dude");
@@ -31,12 +36,6 @@ module.exports = {
 			if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
 				return message.channel.send('I need the permissions to join and speak in your voice channel!');
 			}
-
-			let songInfo = await ytdl.getInfo(args[1]);
-			let song = {
-				title: songInfo.videoDetails.title,
-				url: songInfo.videoDetails.video_url
-			};
 
 			if (!serverQueue) {
 				const queueContract = {
@@ -61,6 +60,11 @@ module.exports = {
 					queue.set(message.guild.id, queueContract);
 					message.channel.send(`**Added ${playlists.length} tracks**`);
 				} catch (error) {
+					let songInfo = await ytdl.getInfo(args[1]);
+					let song = {
+						title: songInfo.videoDetails.title,
+						url: songInfo.videoDetails.video_url
+					};
 					console.log(`Pushing song: ${song.title}\n${song.url}`);
 					queueContract.songs.push(song);
 					queue.set(message.guild.id, queueContract);
@@ -91,6 +95,11 @@ module.exports = {
 					message.channel.send(`**Added ${playlists.length} tracks**`);
 				} catch (error) {
 					//If it's not a playlist then add a single song instead
+					let songInfo = await ytdl.getInfo(args[1]);
+					let song = {
+						title: songInfo.videoDetails.title,
+						url: songInfo.videoDetails.video_url
+					};
 					serverQueue.songs.push(song);
 					message.channel.send(`**Added ${song.title} to the queue**`);
 				}
