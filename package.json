@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@bearer/node-agent": "^3.2.3",
+    "cleverbot-free": "^1.0.5",
     "discord.js": "^12.3.1",
     "ffmpeg-static": "^4.2.7",
     "opusscript": "0.0.7",

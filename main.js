@@ -1,5 +1,6 @@
 const fs = require('fs');
 const Discord = require('discord.js');
+const cleverbot = require('cleverbot-free');
 const Client = require('./client/Client');
 const { prefix, token } = require('./config.json');
 
@@ -19,9 +20,27 @@ client.on('ready', () => {
 	console.log('Bot started');
 });
 
+let ll = (user) => {
+	user;
+};
+
 client.on('message', async (message) => {
-	if (message.content.toLowerCase().includes('hi')) {
-		message.reply('Fuck you');
+	if (message.author.id === ll.user && message.content.toLowerCase().includes('safe word')) {
+		ll.user = '';
+		message.reply('Bye');
+	}
+	// if (message.content.toLowerCase().includes('hi')) {
+	// 	message.reply('Fuck you');
+	// }
+	if (message.content.toLowerCase() === 'hey stupid') {
+		message.reply('What the hell do you want');
+		ll.user = message.author.id;
+	}
+	if (message.author.id === ll.user) {
+		message.channel.send(await cleverbot(message.content));
+	}
+	if (message.content.toLowerCase().includes('uwu')) {
+		message.reply('No');
 	}
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
 	const args = message.content.slice(prefix.length).split(/ +/);
